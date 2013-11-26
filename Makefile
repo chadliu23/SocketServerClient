@@ -2,7 +2,7 @@ CC=g++
 CFLAGS=-c -Wall
 LDFLAGS=
 
-SERVER_SOURCES= Server.cpp SocketAdapter.cpp
+SERVER_SOURCES= ServerMain.cpp Server.cpp SocketAdapter.cpp
 SERVER_OBJECTS=$(SERVER_SOURCES:.cpp=.o)
 SERVER_EXECUTABLE=server
 CLIENT_SOURCES= ClientMain.cpp Client.cpp SocketAdapter.cpp

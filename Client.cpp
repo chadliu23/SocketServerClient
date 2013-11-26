@@ -44,7 +44,7 @@ bool Client::auth(const std::string& name, const std::string& password)
 	toServer += ":";
 	toServer += password;
 	m_socket->socketWrite(toServer);
-	cout <<"<Client> auth: " <<toServer;
+	cout <<"<Client> auth: " <<toServer <<endl;
 	string message = m_socket->readFromServer();
 	if(message == "ACCEPT")
 	{
@@ -63,7 +63,7 @@ bool Client::sendTime()
   	timeinfo = localtime (&rawtime);
 	stringstream ss;
 	ss << asctime(timeinfo);
-	cout <<"<Clent>Send: " <<ss.str() ;
+	cout <<"<Clent> Send: " <<ss.str() ;
 	m_socket->socketWrite(ss.str());
 	string message = m_socket->readFromServer();
 	if(message == "ACK")
