@@ -1,58 +1,103 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include "Client.h"
+#include "SocketAdapter.h"
+#include <time.h>  
+#include <sstream>
+#include <iostream>
 #include <unistd.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
+using namespace std;
 
-void error(const char *msg)
+Client::Client(const std::string& ip, int port, ISocketAdapter* psocket)
+	: m_socket(NULL) 
+	, m_isAuth(false)
 {
-    perror(msg);
-    exit(0);
+	m_socket = psocket;
+	if(m_socket == NULL)
+	{
+		return;
+	}
+	if(m_socket->socketConnect(ip, port) < 0)
+	{
+		delete m_socket;
+		m_socket = NULL;
+	}
+}
+Client::~Client()
+{
+	if(m_socket != NULL)
+	{
+		cout <<"delete m_socket" <<endl;
+		delete m_socket;
+	}
+	cout <<"end of delete m_socket" <<endl;
+	m_socket = NULL;
 }
 
-int main(int argc, char *argv[])
+bool Client::auth(const std::string& name, const std::string& password)
 {
-    int sockfd, portno, n;
-    struct sockaddr_in serv_addr;
-    struct hostent *server;
+	if(m_socket == NULL)
+	{
+		return false;
+	}
 
-    char buffer[256];
-    if (argc < 3) {
-       fprintf(stderr,"usage %s hostname port\n", argv[0]);
-       exit(0);
-    }
-    portno = atoi(argv[2]);
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) 
-        error("ERROR opening socket");
-    server = gethostbyname(argv[1]);
-    if (server == NULL) {
-        fprintf(stderr,"ERROR, no such host\n");
-        exit(0);
-    }
-    bzero((char *) &serv_addr, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    bcopy((char *)server->h_addr, 
-         (char *)&serv_addr.sin_addr.s_addr,
-         server->h_length);
-    serv_addr.sin_port = htons(portno);
-    if (connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
-        error("ERROR connecting");
-    printf("Please enter the message: ");
-    bzero(buffer,256);
-    fgets(buffer,255,stdin);
-    n = write(sockfd, buffer, strlen(buffer));
-    if (n < 0) 
-         error("ERROR writing to socket");
-    bzero(buffer,256);
-    n = read(sockfd, buffer, 255);
-    if (n < 0) 
-         error("ERROR reading from socket");
-    printf("%s\n", buffer);
-    close(sockfd);
-    return 0;
+	string toServer;
+	toServer += name;
+	toServer += ":";
+	toServer += password;
+	m_socket->socketWrite(toServer);
+	cout <<"<Client> auth: " <<toServer;
+	string message = m_socket->readFromServer();
+	if(message == "ACCEPT")
+	{
+		m_isAuth = true;
+		return true;
+	}
+	return false;
 }
 
+bool Client::sendTime()
+{
+	time_t rawtime;
+  	struct tm * timeinfo;
+
+  	time (&rawtime);
+  	timeinfo = localtime (&rawtime);
+	stringstream ss;
+	ss << asctime(timeinfo);
+	cout <<"<Clent>Send: " <<ss.str() ;
+	m_socket->socketWrite(ss.str());
+	string message = m_socket->readFromServer();
+	if(message == "ACK")
+	{
+		return true;
+	}
+	return false;
+}
+bool Client::doJob()
+{
+	if(m_socket == NULL || !m_isAuth)
+	{
+		return false;
+	}
+	while(true)
+	{
+		int tryCount = 0;
+		while(tryCount < 5)
+		{
+			if(sendTime())
+			{
+				break;
+			}
+			else
+			{
+				++tryCount;
+			}
+		}
+		if(tryCount == 5)
+		{
+			return false;
+		}
+		sleep(15);
+
+	}
+	return true;
+}
