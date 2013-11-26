@@ -39,7 +39,7 @@ bool Client::auth(const std::string& name, const std::string& password)
 		return false;
 	}
 
-	string toServer;
+	string toServer = "auth:";
 	toServer += name;
 	toServer += ":";
 	toServer += password;
@@ -63,7 +63,7 @@ bool Client::sendTime()
   	timeinfo = localtime (&rawtime);
 	stringstream ss;
 	ss << asctime(timeinfo);
-	cout <<"<Clent> Send: " <<ss.str() ;
+	cout <<"<Client> Send: " <<ss.str() ;
 	m_socket->socketWrite(ss.str());
 	string message = m_socket->readFromServer();
 	if(message == "ACK")
@@ -90,6 +90,7 @@ bool Client::doJob()
 			else
 			{
 				++tryCount;
+                sleep(2);
 			}
 		}
 		if(tryCount == 5)

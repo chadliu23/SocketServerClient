@@ -57,23 +57,30 @@ void Server::start()
             // This send() function sends the 13 bytes of the string to the new socket
             //socketAdapter.sendToClient("Hello, world!\n");
             string message = m_socket->readFromClient();
-    
-            if(message == "hello:world")
+            if(message.find("auth:")!= string::npos)
             {
-                cout <<m_socket->clientIP() <<":" <<m_socket->clientPort() 
-                     <<": <auth> : " <<message <<endl;
-                m_socket->sendToClient("ACCEPT");
-           }
-           else if(message != "")
-           {
+                if(message == "auth:hello:world")
+                {
+                    cout <<m_socket->clientIP() <<":" <<m_socket->clientPort()
+                        <<": <auth> : " <<message <<endl;
+                    m_socket->sendToClient("ACCEPT");
+                }else
+                {
+                    m_socket->sendToClient("REJECT");
+                    break;
+                }
+            }
+            
+            else if(message != "")
+            {
                cout <<m_socket->clientIP() <<":" <<m_socket->clientPort() 
                     <<": <mesg> : " <<message;
                m_socket->sendToClient("ACK");
-           }
-           else
-          {
+            }
+            else
+            {
               ++emptyMessageCount;
-           }
+            }
         }
         m_socket->closeClient();
     }
